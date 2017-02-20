@@ -33,8 +33,8 @@ type alias Card =
 
 init : (Model, Cmd Msg)
 init =
-  ( { data = [{title="test1", content="test content"}]
-    , story = [{title="test1", content="test content"}]
+  ( { data = [Card "test1" "test content", Card "test2" "test content 2"]
+    , story = [Card "test1" "test content", Card "test2" "test content 2"]
     }
   , Cmd.none
   )
@@ -72,12 +72,14 @@ subscriptions model =
 view : Model -> Html Msg
 view model =
   div
-    [ id "app"]
-    [ viewContents model.data
-    , viewStory model.story
+    []
+    [ div
+       [ id "app"]
+       [ viewContents model.data
+       , viewStory model.story
+       ]
     , viewData model.data
     ]
-
 
 viewStory : List Card -> Html Msg
 viewStory visibleCards =
