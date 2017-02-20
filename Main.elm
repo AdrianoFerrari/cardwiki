@@ -109,7 +109,9 @@ viewData allCards =
 viewCard : Card -> Html Msg
 viewCard card =
   div 
-    [ id ("card-" ++ card.title)] 
+    [ id ("card-" ++ card.title)
+    , class "card"
+    ] 
     [ text card.content ]
 
 

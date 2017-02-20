@@ -1,9 +1,35 @@
+html {
+  box-sizing: border-box;
+}
+
+*, *:before, *:after {
+  box-sizing: inherit;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: #bbc;
+}
 #app {
   display: flex;
 }
+#contents {
+}
 #story {
   width: 100%;
+  padding: 10px;
 }
 #data {
   display: none;
+}
+
+.card {
+  background-color: #eef;
+  border-radius: 3px;
+  padding: 17px;
+  min-height: 56px;
+  margin-bottom: 2px;
+  cursor: pointer;
 }
