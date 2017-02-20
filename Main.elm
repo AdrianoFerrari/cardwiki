@@ -62,6 +62,7 @@ type Msg
   | CloseCard String
   | EditCard String
   | UpdateCard String
+  | DeleteCard String
   | UpdateFieldTitle String
   | UpdateFieldBody String
 
@@ -191,6 +192,17 @@ update msg model =
           }
             ! []
 
+    DeleteCard title ->
+      let
+        filterFn c =
+          c.title /= title
+      in
+      { model
+        | data = List.filter filterFn model.data
+        , story = List.filter filterFn model.story
+      } 
+        ! []
+
     UpdateFieldTitle title ->
       { model
         | fieldTitle = title
@@ -302,6 +314,7 @@ viewCard isEditing card =
       , viewBody card.body 
       , br [][]
       , button [onClick (CloseCard card.title)][text "X"]
+      , button [onClick (DeleteCard card.title)][text "Delete"]
       ]
 
 
