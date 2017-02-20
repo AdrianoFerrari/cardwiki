@@ -57,6 +57,7 @@ init =
 
 type Msg
   = NoOp
+  | LinkClicked String
   | OpenCard String
   | UpdateCard String
   | UpdateFieldTitle String
@@ -68,6 +69,25 @@ update msg model =
   case msg of
     NoOp ->
       model ! []
+
+    LinkClicked title ->
+      let
+        card_ =
+          ListExtra.find (\c -> c.title == title) model.data
+      in
+      case card_ of
+        Nothing ->
+          { model 
+            | story = Card title "" :: model.story 
+            , fieldTitle = title
+            , fieldBody = ""
+            , editing = Just title
+          }
+          ! []
+
+        Just card ->
+          model ! []
+
 
     OpenCard title ->
       let
@@ -88,6 +108,9 @@ update msg model =
 
     UpdateCard title ->
       let
+        card_ =
+          ListExtra.find (\c -> c.title == title) model.data
+
         updateCard c =
           if c.title == title then
             { c 
@@ -97,24 +120,38 @@ update msg model =
           else
             c
       in
-      { model
-        | data = List.map updateCard model.data
-        , story = List.map updateCard model.story
-        , fieldTitle = ""
-        , fieldBody = ""
-        , editing = Nothing
-      }
-        ! []
+      case card_ of
+        Nothing ->
+          { model 
+            | data = Card model.fieldTitle model.fieldBody :: model.data
+            , story = List.map updateCard model.story
+            , fieldTitle = ""
+            , fieldBody = ""
+            , editing = Nothing
+          }
+            ! []
+
+        Just card ->
+          { model
+            | data = List.map updateCard model.data
+            , story = List.map updateCard model.story
+            , fieldTitle = ""
+            , fieldBody = ""
+            , editing = Nothing
+          }
+            ! []
 
     UpdateFieldTitle title ->
       { model
         | fieldTitle = title
+            |> Debug.log "UpdateFieldTitle"
       }
         ! []
 
     UpdateFieldBody body ->
       { model
         | fieldBody = body
+            |> Debug.log "UpdateFieldBody"
       }
         ! []
 
@@ -313,7 +350,7 @@ parseLinks strings =
         in
         a 
           [ href ("#" ++ inner)
-          , onClick (OpenCard inner)
+          , onClick (LinkClicked inner)
           ]
           [ text inner]
        else
