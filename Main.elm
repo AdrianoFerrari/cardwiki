@@ -5,6 +5,8 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import List.Extra as ListExtra
+import Regex
+import Tuple exposing (first, second)
 
 
 main : Program Never Model Msg
@@ -209,8 +211,50 @@ viewCard isEditing card =
       ] 
       [ text card.title
       , br [][]
-      , text card.body 
+      , viewBody card.body 
       ]
+
+
+viewBody : String -> Html Msg
+viewBody str =
+  let
+    matches =
+      Regex.find Regex.All (Regex.regex "\\[\\[(.*?)\\]\\]") str
+
+    matchIndices =
+      matches
+        |> List.map getIndices
+  in
+  case matches of
+    [] ->
+      text str
+
+    [a] ->
+      let
+        indices =
+          getIndices a
+      in
+      div 
+        []
+        ( parseLinks
+          [ (String.slice 0 a.index str, False)
+          , (String.slice (first indices) (second indices) str, True)
+          , (String.slice (second indices) (String.length str) str, False)
+          ]
+        )
+
+    _ ->
+      let
+        zippedIndices =
+          ListExtra.zip matchIndices (List.drop 1 matchIndices)
+            |> Debug.log "zippedIndices"
+            |> getSplitIndices
+            |> Debug.log "splitIndices"
+      in
+      div 
+        []
+        (parseLinks [])
+
 
 
 viewCardItem : Card -> Html Msg
@@ -225,3 +269,47 @@ viewCardData card =
   div 
     [ id ("card-data-" ++ card.title)] 
     [ text card.body ]
+
+
+
+
+-- HELPERS
+
+
+getIndices : Regex.Match -> (Int, Int)
+getIndices match =
+  (match.index, match.index + (match.match |> String.length))
+
+
+getSplitIndices : List ((Int, Int), (Int, Int)) -> List (Int, Int)
+getSplitIndices matchPairs =
+  let
+    indexIntersperse : ((Int, Int), (Int, Int)) -> List (Int, Int)
+    indexIntersperse matchPair =
+      [ matchPair |> first
+      , (matchPair |> first |> second, matchPair |> second |> first)
+      , matchPair |> second
+      ]
+  in
+  List.concatMap indexIntersperse matchPairs
+
+
+parseLinks : List (String, Bool) -> List (Html Msg)
+parseLinks strings =
+  let
+   parseToken (s, b) =
+     if b then
+       span 
+         [ onClick 
+             (OpenCard 
+               (s 
+                 |> String.dropLeft 2 
+                 |> String.dropRight 2
+               )
+             )
+         ]
+         [text s]
+     else
+       text s
+  in
+  List.map parseToken strings
