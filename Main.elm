@@ -4,6 +4,7 @@ port module Main exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import List.Extra as ListExtra
 
 
 main : Program Never Model Msg
@@ -55,7 +56,7 @@ init =
 type Msg
   = NoOp
   | OpenCard String
-  | UpdateCard String String
+  | UpdateCard String
   | UpdateFieldTitle String
   | UpdateFieldBody String
 
@@ -67,31 +68,53 @@ update msg model =
       model ! []
 
     OpenCard title ->
-      { model
-        | editing = Just title
-      }
-        ! []
+      let
+        card_ =
+          ListExtra.find (\c -> c.title == title) model.data
+      in
+      case card_ of
+        Nothing ->
+          model ! []
 
-    UpdateCard title body ->
+        Just card ->
+          { model
+            | fieldBody = card.body
+            , fieldTitle = title
+            , editing = Just title
+          }
+            ! []
+
+    UpdateCard title ->
       let
         updateCard c =
           if c.title == title then
-            { c | body = body }
+            { c 
+              | title = model.fieldTitle
+              , body = model.fieldBody 
+            }
           else
             c
       in
       { model
         | data = List.map updateCard model.data
         , story = List.map updateCard model.story
+        , fieldTitle = ""
+        , fieldBody = ""
         , editing = Nothing
       }
         ! []
 
     UpdateFieldTitle title ->
-      model ! []
+      { model
+        | fieldTitle = title
+      }
+        ! []
 
     UpdateFieldBody body ->
-      model ! []
+      { model
+        | fieldBody = body
+      }
+        ! []
 
 
 -- SUBSCRIPTIONS
@@ -150,22 +173,51 @@ viewData allCards =
 
 viewCard : Bool -> Card -> Html Msg
 viewCard isEditing card =
-  div 
-    [ id ("card-" ++ card.title)
-    , classList
-        [ ("card", True)
-        , ("editing", isEditing)
-        ]
-    , onDoubleClick (OpenCard card.title)
-    ] 
-    [ text card.body ]
+  if isEditing then
+    div 
+      [ id ("card-" ++ card.title)
+      , classList
+          [ ("card", True)
+          , ("editing", isEditing)
+          ]
+      ] 
+      [ input 
+          [ id ("card-title-edit-" ++ card.title)
+          , defaultValue card.title
+          , onInput UpdateFieldTitle
+          ]
+          []
+      , br [][]
+      , textarea 
+          [ id ("card-body-edit-" ++ card.title)
+          , defaultValue card.body
+          , onInput UpdateFieldBody
+          ]
+          []
+      , button
+          [ onClick (UpdateCard card.title) ]
+          [ text "save"]
+      ]
+  else
+    div 
+      [ id ("card-" ++ card.title)
+      , classList
+          [ ("card", True)
+          , ("editing", isEditing)
+          ]
+      , onDoubleClick (OpenCard card.title)
+      ] 
+      [ text card.title
+      , br [][]
+      , text card.body 
+      ]
 
 
 viewCardItem : Card -> Html Msg
 viewCardItem card =
   li 
     [ id ("card-item-" ++ card.title)] 
-    [ text card.body ]
+    [ text card.title ]
 
 
 viewCardData : Card -> Html Msg
