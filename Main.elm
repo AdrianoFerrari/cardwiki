@@ -3,6 +3,7 @@ port module Main exposing (..)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
+import Html.Events exposing (..)
 
 
 main : Program Never Model Msg
@@ -22,12 +23,15 @@ main =
 type alias Model =
   { data : List Card
   , story : List Card
+  , fieldTitle : String
+  , fieldBody : String
+  , editing: Maybe String
   }
 
 
 type alias Card =
   { title : String
-  , content : String
+  , body : String
   }
 
 
@@ -35,6 +39,9 @@ init : (Model, Cmd Msg)
 init =
   ( { data = [Card "test1" "test content", Card "test2" "test content 2"]
     , story = [Card "test1" "test content", Card "test2" "test content 2"]
+    , fieldTitle = ""
+    , fieldBody = ""
+    , editing = Nothing
     }
   , Cmd.none
   )
@@ -47,13 +54,44 @@ init =
 
 type Msg
   = NoOp
+  | OpenCard String
+  | UpdateCard String String
+  | UpdateFieldTitle String
+  | UpdateFieldBody String
 
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
-  model ! []
+  case msg of
+    NoOp ->
+      model ! []
 
+    OpenCard title ->
+      { model
+        | editing = Just title
+      }
+        ! []
 
+    UpdateCard title body ->
+      let
+        updateCard c =
+          if c.title == title then
+            { c | body = body }
+          else
+            c
+      in
+      { model
+        | data = List.map updateCard model.data
+        , story = List.map updateCard model.story
+        , editing = Nothing
+      }
+        ! []
+
+    UpdateFieldTitle title ->
+      model ! []
+
+    UpdateFieldBody body ->
+      model ! []
 
 
 -- SUBSCRIPTIONS
@@ -76,17 +114,21 @@ view model =
     [ div
        [ id "app"]
        [ viewContents model.data
-       , viewStory model.story
+       , viewStory model.editing model.story
        ]
     , viewData model.data
     ]
 
-viewStory : List Card -> Html Msg
-viewStory visibleCards =
+viewStory : Maybe String -> List Card -> Html Msg
+viewStory editingId_ visibleCards =
+  let
+    viewFn c =
+      viewCard (editingId_ == Just c.title) c
+  in
   div
     [ id "story"
     ]
-    ( List.map viewCard visibleCards )
+    ( List.map viewFn visibleCards )
 
 
 viewContents : List Card -> Html Msg
@@ -106,24 +148,28 @@ viewData allCards =
     ( List.map viewCardData allCards )
 
 
-viewCard : Card -> Html Msg
-viewCard card =
+viewCard : Bool -> Card -> Html Msg
+viewCard isEditing card =
   div 
     [ id ("card-" ++ card.title)
-    , class "card"
+    , classList
+        [ ("card", True)
+        , ("editing", isEditing)
+        ]
+    , onDoubleClick (OpenCard card.title)
     ] 
-    [ text card.content ]
+    [ text card.body ]
 
 
 viewCardItem : Card -> Html Msg
 viewCardItem card =
   li 
     [ id ("card-item-" ++ card.title)] 
-    [ text card.content ]
+    [ text card.body ]
 
 
 viewCardData : Card -> Html Msg
 viewCardData card =
   div 
     [ id ("card-data-" ++ card.title)] 
-    [ text card.content ]
+    [ text card.body ]
