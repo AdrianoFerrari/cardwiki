@@ -2,6 +2,7 @@ port module Main exposing (..)
 
 
 import Html exposing (..)
+import Html.Attributes exposing (..)
 
 
 main : Program Never Model Msg
@@ -32,8 +33,8 @@ type alias Card =
 
 init : (Model, Cmd Msg)
 init =
-  ( { data = []
-    , story = []
+  ( { data = [{title="test1", content="test content"}]
+    , story = [{title="test1", content="test content"}]
     }
   , Cmd.none
   )
@@ -70,8 +71,55 @@ subscriptions model =
 
 view : Model -> Html Msg
 view model =
-  div [] [text "test"]
+  div
+    [ id "app"]
+    [ viewContents model.data
+    , viewStory model.story
+    , viewData model.data
+    ]
+
+
+viewStory : List Card -> Html Msg
+viewStory visibleCards =
+  div
+    [ id "story"
+    ]
+    ( List.map viewCard visibleCards )
+
+
+viewContents : List Card -> Html Msg
+viewContents cards =
+  ul
+    [ id "contents"
+    ]
+    ( List.map viewCardItem cards )
 
 
 
+viewData : List Card -> Html Msg
+viewData allCards =
+  div
+    [ id "data"
+    ]
+    ( List.map viewCardData allCards )
 
+
+viewCard : Card -> Html Msg
+viewCard card =
+  div 
+    [ id ("card-" ++ card.title)] 
+    [ text card.content ]
+
+
+viewCardItem : Card -> Html Msg
+viewCardItem card =
+  li 
+    [ id ("card-item-" ++ card.title)] 
+    [ text card.content ]
+
+
+viewCardData : Card -> Html Msg
+viewCardData card =
+  div 
+    [ id ("card-data-" ++ card.title)] 
+    [ text card.content ]
