@@ -243,10 +243,13 @@ viewStory editingId_ visibleCards =
 
 viewContents : List Card -> Html Msg
 viewContents cards =
-  ul
-    [ id "contents"
+  div
+    [ id "content"]
+    [ button [onClick (LinkClicked "")] [text "+"]
+    , ul
+        [ ]
+        ( List.map viewCardItem cards )
     ]
-    ( List.map viewCardItem cards )
 
 
 
