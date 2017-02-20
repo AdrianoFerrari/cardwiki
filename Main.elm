@@ -59,6 +59,8 @@ type Msg
   = NoOp
   | LinkClicked String
   | OpenCard String
+  | CloseCard String
+  | EditCard String
   | UpdateCard String
   | UpdateFieldTitle String
   | UpdateFieldBody String
@@ -88,8 +90,56 @@ update msg model =
         Just card ->
           model ! []
 
-
     OpenCard title ->
+      let
+        card_ =
+          ListExtra.find (\c -> c.title == title) model.data
+
+        cardVisible_ =
+          ListExtra.find (\c -> c.title == title) model.story
+      in
+      case (card_, cardVisible_) of
+        (Just card, Just cardVisible) ->
+          model ! [] -- activate
+
+        (Just card, Nothing) ->
+          { model
+            | story = card :: model.story
+          }
+            ! []
+
+        (Nothing, Just cardVisible) ->
+          model ! [] -- focus/edit
+
+        (Nothing, Nothing) ->
+          model ! []
+
+    CloseCard title ->
+      let
+        card_ =
+          ListExtra.find (\c -> c.title == title) model.data
+
+        cardVisible_ =
+          ListExtra.find (\c -> c.title == title) model.story
+      in
+      case (card_, cardVisible_) of
+        (Just card, Just cardVisible) ->
+          { model
+            | story = List.filter (\c -> c.title /= title) model.story
+          } 
+            ! []
+
+        (Just card, Nothing) ->
+          model ! []
+
+        (Nothing, Just cardVisible) ->
+          model ! []
+
+        (Nothing, Nothing) ->
+          model ! []
+
+
+    EditCard title ->
       let
         card_ =
           ListExtra.find (\c -> c.title == title) model.data
@@ -144,14 +194,12 @@ update msg model =
     UpdateFieldTitle title ->
       { model
         | fieldTitle = title
-            |> Debug.log "UpdateFieldTitle"
       }
         ! []
 
     UpdateFieldBody body ->
       { model
         | fieldBody = body
-            |> Debug.log "UpdateFieldBody"
       }
         ! []
 
@@ -244,11 +292,13 @@ viewCard isEditing card =
           [ ("card", True)
           , ("editing", isEditing)
           ]
-      , onDoubleClick (OpenCard card.title)
+      , onDoubleClick (EditCard card.title)
       ] 
       [ text card.title
       , br [][]
       , viewBody card.body 
+      , br [][]
+      , button [onClick (CloseCard card.title)][text "X"]
       ]
 
 
@@ -284,11 +334,8 @@ viewBody str =
       let
         zippedIndices =
           ListExtra.zip matchIndices (List.drop 1 matchIndices)
-            |> Debug.log "zippedIndices"
             |> getSplitIndices
-            |> Debug.log "splitIndices"
             |> List.append [((0, a.index), False)]
-            |> Debug.log "appended"
             |> List.map 
                 (\t -> 
                   (String.slice (t |> first |> first) (t |> first |> second) str
@@ -305,7 +352,9 @@ viewBody str =
 viewCardItem : Card -> Html Msg
 viewCardItem card =
   li 
-    [ id ("card-item-" ++ card.title)] 
+    [ id ("card-item-" ++ card.title)
+    , onClick (OpenCard card.title)
+    ] 
     [ text card.title ]
 
 
