@@ -243,17 +243,25 @@ viewBody str =
           ]
         )
 
-    _ ->
+    a :: _ ->
       let
         zippedIndices =
           ListExtra.zip matchIndices (List.drop 1 matchIndices)
             |> Debug.log "zippedIndices"
             |> getSplitIndices
             |> Debug.log "splitIndices"
+            |> List.append [((0, a.index), False)]
+            |> Debug.log "appended"
+            |> List.map 
+                (\t -> 
+                  (String.slice (t |> first |> first) (t |> first |> second) str
+                  , second t
+                  )
+                )
       in
       div 
         []
-        (parseLinks [])
+        (parseLinks zippedIndices)
 
 
 
@@ -281,14 +289,14 @@ getIndices match =
   (match.index, match.index + (match.match |> String.length))
 
 
-getSplitIndices : List ((Int, Int), (Int, Int)) -> List (Int, Int)
+getSplitIndices : List ((Int, Int), (Int, Int)) -> List ((Int, Int), Bool)
 getSplitIndices matchPairs =
   let
-    indexIntersperse : ((Int, Int), (Int, Int)) -> List (Int, Int)
+    indexIntersperse : ((Int, Int), (Int, Int)) -> List ((Int, Int), Bool)
     indexIntersperse matchPair =
-      [ matchPair |> first
-      , (matchPair |> first |> second, matchPair |> second |> first)
-      , matchPair |> second
+      [ (matchPair |> first, True)
+      , ((matchPair |> first |> second, matchPair |> second |> first), False)
+      , (matchPair |> second, True)
       ]
   in
   List.concatMap indexIntersperse matchPairs
@@ -297,19 +305,18 @@ getSplitIndices matchPairs =
 parseLinks : List (String, Bool) -> List (Html Msg)
 parseLinks strings =
   let
-   parseToken (s, b) =
-     if b then
-       span 
-         [ onClick 
-             (OpenCard 
-               (s 
-                 |> String.dropLeft 2 
-                 |> String.dropRight 2
-               )
-             )
-         ]
-         [text s]
-     else
-       text s
+    parseToken (s, b) =
+      if b then
+        let
+          inner =
+            s |> String.dropLeft 2 |> String.dropRight 2
+        in
+        a 
+          [ href ("#" ++ inner)
+          , onClick (OpenCard inner)
+          ]
+          [ text inner]
+       else
+         text s
   in
   List.map parseToken strings
