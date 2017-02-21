@@ -71,6 +71,8 @@ type Msg
   | Activate Bool String
   | GoUp
   | GoDown
+  -- === Contents ===
+  | ContentsClick String
   -- === Card Visibility  ===
   | LinkClicked String
   | OpenCard String
@@ -143,6 +145,9 @@ update msg model =
 
         Nothing ->
           model ! []
+
+    ContentsClick title ->
+      update (Activate False title) model
 
     LinkClicked title ->
       let
@@ -308,6 +313,9 @@ update msg model =
             (True, Nothing, Just title) ->
               update (EditCard title) model
 
+            (False, Nothing, Just title) ->
+              update (OpenCard title) model
+
             _ ->
               model ! []
 
@@ -345,10 +353,13 @@ view model =
     [ id "main" ]
     [ div
        [ id "app"]
-       [ viewContents model.data
+       [ viewContents 
+           (if not model.activeStory then model.activeId else Nothing)
+           model.data
        , viewStory 
            (if model.activeStory then model.activeId else Nothing)
-           model.editing model.story
+           model.editing 
+           model.story
        ]
     , viewModel model
     ]
@@ -439,22 +450,25 @@ viewBody str =
 
 -- View: Contents List
 
-viewContents : List Card -> Html Msg
-viewContents cards =
+viewContents : Maybe String -> List Card -> Html Msg
+viewContents activeId_ cards =
   div
-    [ id "content"]
+    [ id "content" ]
     [ button [onClick (LinkClicked "")] [text "+"]
     , ul
         [ ]
-        ( List.map viewCardItem cards )
+        ( List.map (viewCardItem activeId_) cards )
     ]
 
 
-viewCardItem : Card -> Html Msg
-viewCardItem card =
+viewCardItem : Maybe String -> Card -> Html Msg
+viewCardItem activeId_ card =
   li 
     [ id ("card-item-" ++ card.title)
-    , onClick (OpenCard card.title)
+    , classList [ ("card-item", True)
+                , ("active", activeId_ == Just card.title)
+                ]
+    , onClick (ContentsClick card.title)
     ] 
     [ text card.title ]
 

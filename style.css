@@ -34,6 +34,6 @@ body {
   cursor: pointer;
 }
 
-.card.active {
+.card.active, .card-item.active {
   background-color: white;
 }
