@@ -83,9 +83,12 @@ update msg model =
       let
         card_ =
           ListExtra.find (\c -> c.title == title) model.data
+
+        cardVisible_ =
+          ListExtra.find (\c -> c.title == title) model.story
       in
-      case card_ of
-        Nothing ->
+      case (card_, cardVisible_) of
+        (Nothing, _) ->
           { model 
             | story = Card title "" :: model.story 
             , fieldTitle = title
@@ -94,7 +97,13 @@ update msg model =
           }
           ! []
 
-        Just card ->
+        (Just card, Nothing) ->
+          { model
+            | story = card :: model.story
+          }
+            ! []
+
+        _ ->
           model ! []
 
     OpenCard title ->
