@@ -297,11 +297,21 @@ update msg model =
 
     HandleKey str ->
       case str of
+        "j" ->
+          update GoDown model
+
         "k" ->
           update GoUp model
 
-        "j" ->
-          update GoDown model
+        "enter" ->
+          case (model.activeStory, model.editing, model.activeId) of
+            (True, Nothing, Just title) ->
+              update (EditCard title) model
+
+            _ ->
+              model ! []
+
+
 
         _ ->
           model ! []
