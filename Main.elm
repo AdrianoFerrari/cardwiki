@@ -67,10 +67,15 @@ init savedState =
 
 type Msg
   = NoOp
+  -- === Card Activation ===
   | Activate Bool String
+  | GoUp Bool String
+  | GoDown Bool String
+  -- === Card Visibility  ===
   | LinkClicked String
   | OpenCard String
   | CloseCard String
+  -- === Card Editing  ===
   | EditCard String
   | UpdateCard String
   | DeleteCard String
@@ -90,6 +95,42 @@ update msg model =
         , activeStory = isStory
       }
         ! []
+
+    GoUp isStory title ->
+      let
+        prevStory_ =
+          getPrev model.story title
+
+        prevContents_ =
+          getPrev model.data title
+      in
+      case (isStory, prevStory_, prevContents_) of
+        (True, Just prevStory, _) ->
+          update (Activate True prevStory) model
+
+        (False, _, Just prevContents) ->
+          update (Activate False prevContents) model
+
+        (_, _, _) ->
+          model ! []
+
+    GoDown isStory title ->
+      let
+        nextStory_ =
+          getNext model.story title
+
+        nextContents_ =
+          getNext model.data title
+      in
+      case (isStory, nextStory_, nextContents_) of
+        (True, Just nextStory, _) ->
+          update (Activate True nextStory) model
+
+        (False, _, Just nextContents) ->
+          update (Activate False nextContents) model
+
+        (_, _, _) ->
+          model ! []
 
     LinkClicked title ->
       let
@@ -263,6 +304,15 @@ subscriptions model =
 
 view : Model -> Html Msg
 view model =
+  let
+    action msg =
+      case model.activeId of
+        Just title ->
+          msg model.activeStory title
+
+        Nothing ->
+          NoOp
+  in
   div
     [ id "main" ]
     [ div
@@ -273,6 +323,12 @@ view model =
            model.editing model.story
        ]
     , viewModel model
+    , button 
+        [onClick (action GoUp)]
+        [text "up"]
+    , button 
+        [onClick (action GoDown)]
+        [text "down"]
     ]
 
 
@@ -408,3 +464,32 @@ viewListCardData cards =
         [ pre [][text card.body] ]
   in
   List.map viewCardData cards
+
+
+
+
+-- HELPERS
+
+relativeGetCard : Int -> List Card -> String -> Maybe String
+relativeGetCard delta cards title =
+  let
+    currIndex_ =
+      ListExtra.findIndex (\c -> c.title == title) cards
+  in
+  case currIndex_ of
+    Just currIndex ->
+      ListExtra.getAt (currIndex + delta) cards
+        |> Maybe.map (\c -> c.title)
+
+    Nothing ->
+      Nothing
+      
+
+getNext : List Card -> String -> Maybe String
+getNext cards title =
+  relativeGetCard 1 cards title
+
+
+getPrev : List Card -> String -> Maybe String
+getPrev cards title =
+  relativeGetCard (-1) cards title
