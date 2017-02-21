@@ -33,3 +33,7 @@ body {
   margin-bottom: 2px;
   cursor: pointer;
 }
+
+.card.active {
+  background-color: white;
+}

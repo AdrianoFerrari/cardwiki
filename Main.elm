@@ -29,7 +29,9 @@ type alias Model =
   , story : List Card
   , fieldTitle : String
   , fieldBody : String
-  , editing: Maybe String
+  , editing : Maybe String
+  , activeId : Maybe String
+  , activeStory : Bool
   }
 
 
@@ -51,6 +53,8 @@ init savedState =
         , fieldTitle = ""
         , fieldBody = ""
         , editing = Nothing
+        , activeId = Nothing
+        , activeStory = False
         }
       , Cmd.none
       )
@@ -63,6 +67,7 @@ init savedState =
 
 type Msg
   = NoOp
+  | Activate Bool String
   | LinkClicked String
   | OpenCard String
   | CloseCard String
@@ -78,6 +83,13 @@ update msg model =
   case msg of
     NoOp ->
       model ! []
+
+    Activate isStory title ->
+      { model
+        | activeId = Just title
+        , activeStory = isStory
+      }
+        ! []
 
     LinkClicked title ->
       let
@@ -256,7 +268,9 @@ view model =
     [ div
        [ id "app"]
        [ viewContents model.data
-       , viewStory model.editing model.story
+       , viewStory 
+           (if model.activeStory then model.activeId else Nothing)
+           model.editing model.story
        ]
     , viewModel model
     ]
@@ -264,11 +278,11 @@ view model =
 
 -- View: Story (visible cards)
 
-viewStory : Maybe String -> List Card -> Html Msg
-viewStory editingId_ visibleCards =
+viewStory : Maybe String -> Maybe String -> List Card -> Html Msg
+viewStory activeId_ editingId_ visibleCards =
   let
     viewFn c =
-      viewCard (editingId_ == Just c.title) c
+      viewCard (activeId_ == Just c.title) (editingId_ == Just c.title) c
   in
   div
     [ id "story"
@@ -277,49 +291,54 @@ viewStory editingId_ visibleCards =
 
 
 
-viewCard : Bool -> Card -> Html Msg
-viewCard isEditing card =
-  if isEditing then
-    div 
-      [ id ("card-" ++ card.title)
-      , classList
-          [ ("card", True)
-          , ("editing", isEditing)
-          ]
-      ] 
-      [ input 
-          [ id ("card-title-edit-" ++ card.title)
-          , defaultValue card.title
-          , onInput UpdateFieldTitle
-          ]
-          []
-      , br [][]
-      , textarea 
-          [ id ("card-body-edit-" ++ card.title)
-          , defaultValue card.body
-          , onInput UpdateFieldBody
-          ]
-          []
-      , button
-          [ onClick (UpdateCard card.title) ]
-          [ text "save"]
-      ]
-  else
-    div 
-      [ id ("card-" ++ card.title)
-      , classList
-          [ ("card", True)
-          , ("editing", isEditing)
-          ]
-      , onDoubleClick (EditCard card.title)
-      ] 
-      [ text card.title
-      , br [][]
-      , viewBody card.body 
-      , br [][]
-      , button [onClick (CloseCard card.title)][text "X"]
-      , button [onClick (DeleteCard card.title)][text "Delete"]
-      ]
+viewCard : Bool -> Bool -> Card -> Html Msg
+viewCard isActive isEditing card =
+  case isEditing of
+    True ->
+      div 
+        [ id ("card-" ++ card.title)
+        , classList
+            [ ("card", True)
+            , ("active", isActive)
+            , ("editing", isEditing)
+            ]
+        ] 
+        [ input 
+            [ id ("card-title-edit-" ++ card.title)
+            , defaultValue card.title
+            , onInput UpdateFieldTitle
+            ]
+            []
+        , br [][]
+        , textarea 
+            [ id ("card-body-edit-" ++ card.title)
+            , defaultValue card.body
+            , onInput UpdateFieldBody
+            ]
+            []
+        , button
+            [ onClick (UpdateCard card.title) ]
+            [ text "save"]
+        ]
+
+    False ->
+      div 
+        [ id ("card-" ++ card.title)
+        , classList
+            [ ("card", True)
+            , ("active", isActive)
+            , ("editing", isEditing)
+            ]
+        , onClick (Activate True card.title)
+        , onDoubleClick (EditCard card.title)
+        ] 
+        [ text card.title
+        , br [][]
+        , viewBody card.body 
+        , br [][]
+        , button [onClick (CloseCard card.title)][text "X"]
+        , button [onClick (DeleteCard card.title)][text "Delete"]
+        ]
 
 
 viewBody : String -> Html Msg
