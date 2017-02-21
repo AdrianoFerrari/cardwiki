@@ -69,8 +69,8 @@ type Msg
   = NoOp
   -- === Card Activation ===
   | Activate Bool String
-  | GoUp Bool String
-  | GoDown Bool String
+  | GoUp
+  | GoDown
   -- === Card Visibility  ===
   | LinkClicked String
   | OpenCard String
@@ -81,6 +81,8 @@ type Msg
   | DeleteCard String
   | UpdateFieldTitle String
   | UpdateFieldBody String
+  -- === Ports ===
+  | HandleKey String
 
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -96,40 +98,50 @@ update msg model =
       }
         ! []
 
-    GoUp isStory title ->
-      let
-        prevStory_ =
-          getPrev model.story title
+    GoUp ->
+      case model.activeId of
+        Just title ->
+          let
+            prevStory_ =
+              getPrev model.story title
 
-        prevContents_ =
-          getPrev model.data title
-      in
-      case (isStory, prevStory_, prevContents_) of
-        (True, Just prevStory, _) ->
-          update (Activate True prevStory) model
+            prevContents_ =
+              getPrev model.data title
+          in
+          case (model.activeStory, prevStory_, prevContents_) of
+            (True, Just prevStory, _) ->
+              update (Activate True prevStory) model
 
-        (False, _, Just prevContents) ->
-          update (Activate False prevContents) model
+            (False, _, Just prevContents) ->
+              update (Activate False prevContents) model
 
-        (_, _, _) ->
+            (_, _, _) ->
+              model ! []
+
+        Nothing ->
           model ! []
 
-    GoDown isStory title ->
-      let
-        nextStory_ =
-          getNext model.story title
+    GoDown ->
+      case model.activeId of
+        Just title ->
+          let
+            nextStory_ =
+              getNext model.story title
 
-        nextContents_ =
-          getNext model.data title
-      in
-      case (isStory, nextStory_, nextContents_) of
-        (True, Just nextStory, _) ->
-          update (Activate True nextStory) model
+            nextContents_ =
+              getNext model.data title
+          in
+          case (model.activeStory, nextStory_, nextContents_) of
+            (True, Just nextStory, _) ->
+              update (Activate True nextStory) model
 
-        (False, _, Just nextContents) ->
-          update (Activate False nextContents) model
+            (False, _, Just nextContents) ->
+              update (Activate False nextContents) model
 
-        (_, _, _) ->
+            (_, _, _) ->
+              model ! []
+
+        Nothing ->
           model ! []
 
     LinkClicked title ->
@@ -283,17 +295,32 @@ update msg model =
       }
         ! []
 
+    HandleKey str ->
+      case str of
+        "k" ->
+          update GoUp model
+
+        "j" ->
+          update GoDown model
+
+        _ ->
+          model ! []
+
+
+
 
 -- SUBSCRIPTIONS
 
 
 port linkClicked : (String -> msg) -> Sub msg
+port shortcut : (String -> msg) -> Sub msg
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
   Sub.batch
     [ linkClicked LinkClicked
+    , shortcut HandleKey
     ]
 
 
@@ -304,15 +331,6 @@ subscriptions model =
 
 view : Model -> Html Msg
 view model =
-  let
-    action msg =
-      case model.activeId of
-        Just title ->
-          msg model.activeStory title
-
-        Nothing ->
-          NoOp
-  in
   div
     [ id "main" ]
     [ div
@@ -323,12 +341,6 @@ view model =
            model.editing model.story
        ]
     , viewModel model
-    , button 
-        [onClick (action GoUp)]
-        [text "up"]
-    , button 
-        [onClick (action GoDown)]
-        [text "down"]
     ]
 
 

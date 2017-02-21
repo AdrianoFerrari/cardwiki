@@ -1,5 +1,6 @@
 <html>
   <head>
+    <script src="mousetrap.js"></script>
     <script type="text/javascript" src="elm.js"></script>
     <link rel="stylesheet" href="style.css"/>
   </head>
@@ -95,9 +96,30 @@ document.addEventListener('DOMContentLoaded', initialize, false);
 /*======= Elm Ports ======= */
 
 var linkClicked = function(title) {
-  console.log('clicked')
   cardwiki.ports.linkClicked.send(title);
 }
+
+
+/*======= Keyboard Shortcuts ======= */
+
+var shortcuts =
+  [ 'j'
+  , 'k'
+  ]
+
+var needOverride =
+  [
+  ]
+
+Mousetrap.bind(shortcuts, function(e, s) {
+  cardwiki.ports.shortcut.send(s)
+
+  if(needOverride.includes(s)) {
+    return false;
+  }
+});
+
+
 
 </script>
   </body>
