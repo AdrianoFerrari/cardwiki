@@ -50,9 +50,11 @@ var card = function(title, body) {
   return {"title": title, "body": body };
 }
 
+
+
+
 var initialize = function() {
   var mainNode = document.getElementById('main');
-  console.log('mainNode', mainNode)
 
   if (mainNode) {
     Elm.Main.embed(mainNode, domToModel());
@@ -60,6 +62,9 @@ var initialize = function() {
     Elm.Main.fullscreen(domToModel());
   }
 }
+
+
+document.addEventListener('DOMContentLoaded', initialize, false);
 </script>
   </body>
 </html>
