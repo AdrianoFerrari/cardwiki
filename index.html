@@ -4,8 +4,41 @@
     <link rel="stylesheet" href="style.css"/>
   </head>
   <body>
-    <script type="text/javascript">
-      Elm.Main.fullscreen();
-    </script>
+<script type="text/javascript">
+// domToModel : Element -> Maybe Model
+
+
+// domToListCard : Element -> Maybe (List Card)
+var domToListCard = function(el) {
+
+}
+
+// domToCard : Element -> Maybe Card
+var domToCard = function(el) {
+  if (el.title) {
+    return card(el.title, el.children[0].innerText);
+  } else {
+    return null;
+  }
+}
+
+
+// card : String -> String -> Card
+var card = function(title, body) { 
+  return {"title": title, "body": body };
+}
+
+
+// init : Model
+var init =
+  { "data": [ card("test data","body test") ]
+  , "story": []
+  , "fieldTitle": "" 
+  , "fieldBody": "" 
+  , "editing": null
+  }
+
+Elm.Main.fullscreen(init);
+</script>
   </body>
 </html>

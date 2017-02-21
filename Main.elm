@@ -9,9 +9,9 @@ import Regex
 import Tuple exposing (first, second)
 
 
-main : Program Never Model Msg
+main : Program (Maybe Model) Model Msg
 main =
-  program
+  programWithFlags
     { init = init
     , view = view
     , update = update
@@ -38,16 +38,21 @@ type alias Card =
   }
 
 
-init : (Model, Cmd Msg)
-init =
-  ( { data = [Card "test1" "test content", Card "test2" "test content 2"]
-    , story = [Card "test1" "test content", Card "test2" "test content 2"]
-    , fieldTitle = ""
-    , fieldBody = ""
-    , editing = Nothing
-    }
-  , Cmd.none
-  )
+init : Maybe Model -> (Model, Cmd Msg)
+init savedState =
+  case savedState of
+    Just model ->
+      model ! []
+
+    Nothing ->
+      ( { data = [Card "test1" "test content", Card "test2" "test content 2"]
+        , story = [Card "test1" "test content", Card "test2" "test content 2"]
+        , fieldTitle = ""
+        , fieldBody = ""
+        , editing = Nothing
+        }
+      , Cmd.none
+      )
 
 
 
@@ -238,8 +243,11 @@ view model =
        [ viewContents model.data
        , viewStory model.editing model.story
        ]
-    , viewData model.data
+    , viewModel model
     ]
+
+
+-- View: Story (visible cards)
 
 viewStory : Maybe String -> List Card -> Html Msg
 viewStory editingId_ visibleCards =
@@ -252,25 +260,6 @@ viewStory editingId_ visibleCards =
     ]
     ( List.map viewFn visibleCards )
 
-
-viewContents : List Card -> Html Msg
-viewContents cards =
-  div
-    [ id "content"]
-    [ button [onClick (LinkClicked "")] [text "+"]
-    , ul
-        [ ]
-        ( List.map viewCardItem cards )
-    ]
-
-
-
-viewData : List Card -> Html Msg
-viewData allCards =
-  div
-    [ id "data"
-    ]
-    ( List.map viewCardData allCards )
 
 
 viewCard : Bool -> Card -> Html Msg
@@ -364,6 +353,18 @@ viewBody str =
         (parseLinks zippedIndices)
 
 
+-- View: Contents List
+
+viewContents : List Card -> Html Msg
+viewContents cards =
+  div
+    [ id "content"]
+    [ button [onClick (LinkClicked "")] [text "+"]
+    , ul
+        [ ]
+        ( List.map viewCardItem cards )
+    ]
+
 
 viewCardItem : Card -> Html Msg
 viewCardItem card =
@@ -374,11 +375,33 @@ viewCardItem card =
     [ text card.title ]
 
 
-viewCardData : Card -> Html Msg
-viewCardData card =
-  div 
-    [ id ("card-data-" ++ card.title)] 
-    [ text card.body ]
+-- View: Model Data 
+
+viewModel : Model -> Html Msg
+viewModel model =
+  div
+    [ id "model"
+    ]
+    [ div [ id "model-data" ] 
+        (viewListCardData model.data)
+    , div [ id "model-story" ] 
+        (viewListCardData model.story)
+    , div [ id "model-fieldTitle" ] 
+        [pre [][text model.fieldTitle]]
+    , div [ id "model-fieldBody" ] 
+        [pre [][text model.fieldBody]]
+    ]
+
+
+viewListCardData : List Card -> List (Html Msg)
+viewListCardData cards =
+  let
+    viewCardData card =
+      div 
+        [ attribute "title" card.title ] 
+        [ pre [][text card.body] ]
+  in
+  List.map viewCardData cards
 
 
 
