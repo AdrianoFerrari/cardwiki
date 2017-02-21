@@ -5,6 +5,10 @@
   </head>
   <body>
 <script type="text/javascript">
+
+
+/*======= MODEL Parsing from DOM ======= */
+
 // domToModel : Model
 var domToModel = function() {
   var data = 
@@ -63,19 +67,34 @@ var card = function(title, body) {
 
 
 
+/*======= INITIALIZE Elm App ======= */
+
+var cardwiki;
+
 var initialize = function() {
   var mainNode = document.getElementById('main');
   var data = domToModel();
 
   if (mainNode) {
-    Elm.Main.embed(mainNode, data);
+    cardwiki = Elm.Main.embed(mainNode, data);
   } else {
-    Elm.Main.fullscreen(data);
+    cardwiki = Elm.Main.fullscreen(data);
   }
 }
 
 
 document.addEventListener('DOMContentLoaded', initialize, false);
+
+
+
+
+/*======= Elm Ports ======= */
+
+var linkClicked = function(title) {
+  console.log('clicked')
+  cardwiki.ports.linkClicked.send(title);
+}
+
 </script>
   </body>
 </html>

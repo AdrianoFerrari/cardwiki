@@ -225,9 +225,14 @@ update msg model =
 -- SUBSCRIPTIONS
 
 
+port linkClicked : (String -> msg) -> Sub msg
+
+
 subscriptions : Model -> Sub Msg
 subscriptions model =
-  Sub.none
+  Sub.batch
+    [ linkClicked LinkClicked
+    ]
 
 
 
@@ -313,7 +318,8 @@ viewBody str =
   let
     matchToLink {match} =
       let m = match |> String.dropLeft 2 |> String.dropRight 2 in
-      String.join "" ["[",m,"](#",m,")"]
+      String.join "" 
+        [ "<a href=\"javascript:linkClicked('" , m , "')\">", m, "</a>" ]
 
     parsedWikiLinks =
       R.replace R.All
