@@ -5,13 +5,35 @@
   </head>
   <body>
 <script type="text/javascript">
-// domToModel : Element -> Maybe Model
+// domToModel : Model
+var domToModel = function() {
+  var data = 
+    domToListCard(document.getElementById('model-data'));
 
+  var story = 
+    domToListCard(document.getElementById('model-story'));
 
-// domToListCard : Element -> Maybe (List Card)
-var domToListCard = function(el) {
+  var model =
+    { "data": data
+    , "story": story
+    , "fieldTitle": "" 
+    , "fieldBody": "" 
+    , "editing": null
+    }
 
+  return model;
 }
+
+
+// domToListCard : Element -> List Card
+var domToListCard = function(el) {
+  if (el && el.children) {
+    return [].slice.call(el.children).map(domToCard)
+  } else {
+    return [];
+  }
+}
+
 
 // domToCard : Element -> Maybe Card
 var domToCard = function(el) {
@@ -28,17 +50,16 @@ var card = function(title, body) {
   return {"title": title, "body": body };
 }
 
+var initialize = function() {
+  var mainNode = document.getElementById('main');
+  console.log('mainNode', mainNode)
 
-// init : Model
-var init =
-  { "data": [ card("test data","body test") ]
-  , "story": []
-  , "fieldTitle": "" 
-  , "fieldBody": "" 
-  , "editing": null
+  if (mainNode) {
+    Elm.Main.embed(mainNode, domToModel());
+  } else {
+    Elm.Main.fullscreen(domToModel());
   }
-
-Elm.Main.fullscreen(init);
+}
 </script>
   </body>
 </html>
