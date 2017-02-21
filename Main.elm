@@ -5,8 +5,9 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import List.Extra as ListExtra
-import Regex
+import Regex as R
 import Tuple exposing (first, second)
+import Markdown
 
 
 main : Program (Maybe Model) Model Msg
@@ -310,47 +311,18 @@ viewCard isEditing card =
 viewBody : String -> Html Msg
 viewBody str =
   let
-    matches =
-      Regex.find Regex.All (Regex.regex "\\[\\[(.*?)\\]\\]") str
+    matchToLink {match} =
+      let m = match |> String.dropLeft 2 |> String.dropRight 2 in
+      String.join "" ["[",m,"](#",m,")"]
 
-    matchIndices =
-      matches
-        |> List.map getIndices
+    parsedWikiLinks =
+      R.replace R.All
+        (R.regex "\\[\\[([^\\]]+)\\]\\]")
+        matchToLink
+        str
   in
-  case matches of
-    [] ->
-      text str
+  Markdown.toHtml [] parsedWikiLinks
 
-    [a] ->
-      let
-        indices =
-          getIndices a
-      in
-      div 
-        []
-        ( parseLinks
-          [ (String.slice 0 a.index str, False)
-          , (String.slice (first indices) (second indices) str, True)
-          , (String.slice (second indices) (String.length str) str, False)
-          ]
-        )
-
-    a :: _ ->
-      let
-        zippedIndices =
-          ListExtra.zip matchIndices (List.drop 1 matchIndices)
-            |> getSplitIndices
-            |> List.append [((0, a.index), False)]
-            |> List.map 
-                (\t -> 
-                  (String.slice (t |> first |> first) (t |> first |> second) str
-                  , second t
-                  )
-                )
-      in
-      div 
-        []
-        (parseLinks zippedIndices)
 
 
 -- View: Contents List
@@ -402,46 +374,3 @@ viewListCardData cards =
         [ pre [][text card.body] ]
   in
   List.map viewCardData cards
-
-
-
-
--- HELPERS
-
-
-getIndices : Regex.Match -> (Int, Int)
-getIndices match =
-  (match.index, match.index + (match.match |> String.length))
-
-
-getSplitIndices : List ((Int, Int), (Int, Int)) -> List ((Int, Int), Bool)
-getSplitIndices matchPairs =
-  let
-    indexIntersperse : ((Int, Int), (Int, Int)) -> List ((Int, Int), Bool)
-    indexIntersperse matchPair =
-      [ (matchPair |> first, True)
-      , ((matchPair |> first |> second, matchPair |> second |> first), False)
-      , (matchPair |> second, True)
-      ]
-  in
-  List.concatMap indexIntersperse matchPairs
-
-
-parseLinks : List (String, Bool) -> List (Html Msg)
-parseLinks strings =
-  let
-    parseToken (s, b) =
-      if b then
-        let
-          inner =
-            s |> String.dropLeft 2 |> String.dropRight 2
-        in
-        a 
-          [ href ("#" ++ inner)
-          , onClick (LinkClicked inner)
-          ]
-          [ text inner]
-       else
-         text s
-  in
-  List.map parseToken strings

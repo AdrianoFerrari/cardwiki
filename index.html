@@ -13,13 +13,23 @@ var domToModel = function() {
   var story = 
     domToListCard(document.getElementById('model-story'));
 
-  var model =
-    { "data": data
-    , "story": story
-    , "fieldTitle": "" 
-    , "fieldBody": "" 
-    , "editing": null
-    }
+  if(data.length == 0) {
+    var model =
+      { "data": []
+      , "story": [card("New Card","")]
+      , "fieldTitle": "New Card" 
+      , "fieldBody": "" 
+      , "editing": "New Card"
+      }
+  } else {
+    var model =
+      { "data": data
+      , "story": story
+      , "fieldTitle": "" 
+      , "fieldBody": "" 
+      , "editing": null
+      }
+  }
 
   return model;
 }
@@ -55,11 +65,12 @@ var card = function(title, body) {
 
 var initialize = function() {
   var mainNode = document.getElementById('main');
+  var data = domToModel();
 
   if (mainNode) {
-    Elm.Main.embed(mainNode, domToModel());
+    Elm.Main.embed(mainNode, data);
   } else {
-    Elm.Main.fullscreen(domToModel());
+    Elm.Main.fullscreen(data);
   }
 }
 
