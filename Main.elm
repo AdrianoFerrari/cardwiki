@@ -71,10 +71,14 @@ type Msg
   | Activate Bool String
   | GoUp
   | GoDown
+  | GoRight
+  | GoLeft
   -- === Contents ===
   | ContentsClick String
-  -- === Card Visibility  ===
+  -- === Card Creation  ===
+  | AddCard String
   | LinkClicked String
+  -- === Card Visibility  ===
   | OpenCard String
   | CloseCard String
   -- === Card Editing  ===
@@ -146,8 +150,39 @@ update msg model =
         Nothing ->
           model ! []
 
+    GoRight ->
+      case model.activeStory of
+        False ->
+          { model
+            | activeStory = True
+          } 
+            ! []
+
+        True ->
+          model ! []
+
+    GoLeft ->
+      case model.activeStory of
+        True ->
+          { model
+            | activeStory = False
+          } 
+            ! []
+
+        False ->
+          model ! []
+
     ContentsClick title ->
       update (Activate False title) model
+
+    AddCard title ->
+      { model
+        | story = Card title "" :: model.story
+        , fieldTitle = title
+        , fieldBody = ""
+        , editing = Just title
+      }
+        ! []
 
     LinkClicked title ->
       let
@@ -159,13 +194,7 @@ update msg model =
       in
       case (card_, cardVisible_) of
         (Nothing, _) ->
-          { model 
-            | story = Card title "" :: model.story 
-            , fieldTitle = title
-            , fieldBody = ""
-            , editing = Just title
-          }
-          ! []
+          update (AddCard title) model
 
         (Just card, Nothing) ->
           { model
@@ -303,10 +332,16 @@ update msg model =
     HandleKey str ->
       case str of
         "j" ->
-          update GoDown model
+          normalMode GoDown model
 
         "k" ->
-          update GoUp model
+          normalMode GoUp model
+
+        "l" ->
+          normalMode GoRight model
+
+        "h" ->
+          normalMode GoLeft model
 
         "enter" ->
           case (model.activeStory, model.editing, model.activeId) of
@@ -319,7 +354,16 @@ update msg model =
             _ ->
               model ! []
 
+        "mod+enter" ->
+          case model.editing of
+            Just title ->
+              update (UpdateCard title) model
 
+            Nothing ->
+              model ! []
+
+        "mod+option+n" ->
+          normalMode (AddCard "New Card") model
 
         _ ->
           model ! []
@@ -394,6 +438,8 @@ viewCard isActive isEditing card =
         ] 
         [ input 
             [ id ("card-title-edit-" ++ card.title)
+            , classList [ ("mousetrap", True) 
+                        ]
             , defaultValue card.title
             , onInput UpdateFieldTitle
             ]
@@ -401,6 +447,8 @@ viewCard isActive isEditing card =
         , br [][]
         , textarea 
             [ id ("card-body-edit-" ++ card.title)
+            , classList [ ("mousetrap", True) 
+                        ]
             , defaultValue card.body
             , onInput UpdateFieldBody
             ]
@@ -454,7 +502,7 @@ viewContents : Maybe String -> List Card -> Html Msg
 viewContents activeId_ cards =
   div
     [ id "content" ]
-    [ button [onClick (LinkClicked "")] [text "+"]
+    [ button [onClick (AddCard "New Card")] [text "+"]
     , ul
         [ ]
         ( List.map (viewCardItem activeId_) cards )
@@ -529,3 +577,13 @@ getNext cards title =
 getPrev : List Card -> String -> Maybe String
 getPrev cards title =
   relativeGetCard (-1) cards title
+
+
+normalMode : Msg -> Model -> (Model, Cmd Msg)
+normalMode msg model =
+  case model.editing of
+    Just title ->
+      model ! []
+
+    Nothing ->
+      update msg model
