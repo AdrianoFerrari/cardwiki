@@ -8,6 +8,8 @@ import List.Extra as ListExtra
 import Regex as R
 import Tuple exposing (first, second)
 import Markdown
+import Task
+import Dom
 
 
 main : Program (Maybe Model) Model Msg
@@ -196,7 +198,9 @@ update msg model =
             , fieldTitle = title
             , editing = Just title
           }
-            ! [ dirty True ]
+            ! [ dirty True 
+              , focus ("card-body-edit-" ++ title)
+              ]
 
     UpdateCard title ->
       let
@@ -483,3 +487,8 @@ normalMode msg model =
 
     Nothing ->
       update msg model
+
+
+focus : String -> Cmd Msg
+focus elemId =
+  Task.attempt (\_ -> NoOp) (Dom.focus elemId)
