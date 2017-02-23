@@ -20,6 +20,9 @@ main =
     }
 
 
+port dirty : Bool -> Cmd msg
+
+
 
 
 -- MODEL
@@ -182,7 +185,7 @@ update msg model =
         , fieldBody = ""
         , editing = Just title
       }
-        ! []
+        ! [ dirty True ]
 
     LinkClicked title ->
       let
@@ -221,7 +224,7 @@ update msg model =
           { model
             | story = card :: model.story
           }
-            ! []
+            ! [ dirty True ]
 
         (Nothing, Just cardVisible) ->
           model ! [] -- focus/edit
@@ -242,7 +245,7 @@ update msg model =
           { model
             | story = List.filter (\c -> c.title /= title) model.story
           } 
-            ! []
+            ! [ dirty True ]
 
         (Just card, Nothing) ->
           model ! []
@@ -269,7 +272,7 @@ update msg model =
             , fieldTitle = title
             , editing = Just title
           }
-            ! []
+            ! [ dirty True ]
 
     UpdateCard title ->
       let
@@ -294,7 +297,7 @@ update msg model =
             , fieldBody = ""
             , editing = Nothing
           }
-            ! []
+            ! [ dirty True ]
 
         Just card ->
           { model
@@ -304,7 +307,7 @@ update msg model =
             , fieldBody = ""
             , editing = Nothing
           }
-            ! []
+            ! [ dirty True ]
 
     DeleteCard title ->
       let
@@ -315,7 +318,7 @@ update msg model =
         | data = List.filter filterFn model.data
         , story = List.filter filterFn model.story
       } 
-        ! []
+        ! [ dirty True ]
 
     UpdateFieldTitle title ->
       { model

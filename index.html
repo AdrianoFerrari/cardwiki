@@ -75,6 +75,7 @@ var card = function(title, body) {
 /*======= INITIALIZE Elm App ======= */
 
 var cardwiki;
+var dirty = false;
 
 var initialize = function() {
   var mainNode = document.getElementById('main');
@@ -85,10 +86,25 @@ var initialize = function() {
   } else {
     cardwiki = Elm.Main.fullscreen(data);
   }
+
+  cardwiki.ports.dirty.subscribe(function(bool) {
+    dirty = bool;
+  });
 }
 
 
 document.addEventListener('DOMContentLoaded', initialize, false);
+
+
+
+
+/*======= Event Listeners ======= */
+
+window.addEventListener('beforeunload', function(e) {
+  if(dirty) {
+    e.returnValue = "!!!";
+  }
+});
 
 
 
@@ -98,6 +114,8 @@ document.addEventListener('DOMContentLoaded', initialize, false);
 var linkClicked = function(title) {
   cardwiki.ports.linkClicked.send(title);
 }
+
+
 
 
 /*======= Keyboard Shortcuts ======= */
