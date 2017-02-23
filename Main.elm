@@ -35,7 +35,7 @@ type alias Model =
   , story : List Card
   , fieldTitle : String
   , fieldBody : String
-  , editing : Maybe String
+  , editing : Maybe (String, Bool)
   }
 
 
@@ -112,12 +112,13 @@ update msg model =
             | story = Card title "" :: model.story
             , fieldTitle = title
             , fieldBody = ""
-            , editing = Just title
+            , editing = Just (title, True)
           }
             ! [ dirty True
               , focus ("card-title-edit-" ++ title)
               , execCommand "selectAll"
               ]
+
         Just _ ->
           model ! []
 
@@ -204,7 +205,7 @@ update msg model =
           { model
             | fieldBody = card.body
             , fieldTitle = title
-            , editing = Just title
+            , editing = Just (title, False)
           }
             ! [ dirty True 
               , focus ("card-body-edit-" ++ title)
@@ -272,7 +273,7 @@ update msg model =
       case str of
         "mod+enter" ->
           case model.editing of
-            Just title ->
+            Just (title, _) ->
               update (UpdateCard title) model
 
             Nothing ->
@@ -322,11 +323,16 @@ view model =
 
 -- View: Story (visible cards)
 
-viewStory : Maybe String -> List Card -> Html Msg
-viewStory editingId_ visibleCards =
+viewStory : Maybe (String, Bool) -> List Card -> Html Msg
+viewStory editing_ visibleCards =
   let
     viewFn c =
-      viewCard (editingId_ == Just c.title) c
+      case editing_ of
+        Just (editing, draft) ->
+          viewCard (editing == c.title) c
+
+        Nothing ->
+          viewCard False c
   in
   div
     [ id "story"
