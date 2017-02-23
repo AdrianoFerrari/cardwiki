@@ -32,10 +32,16 @@ port execCommand : String -> Cmd msg
 
 type alias Model =
   { data : List Card
-  , story : List Card
+  , visible : List String
+  , editing : Maybe EditState
+  }
+
+
+type alias EditState =
+  { title : String
+  , isNew : Bool
   , fieldTitle : String
   , fieldBody : String
-  , editing : Maybe String
   }
 
 
@@ -53,9 +59,7 @@ init savedState =
 
     Nothing ->
       ( { data = [Card "test1" "test content", Card "test2" "test content 2"]
-        , story = [Card "test1" "test content", Card "test2" "test content 2"]
-        , fieldTitle = ""
-        , fieldBody = ""
+        , visible = ["test1", "test2"]
         , editing = Nothing
         }
       , Cmd.none
@@ -69,20 +73,18 @@ init savedState =
 
 type Msg
   = NoOp
-  -- === Contents ===
-  | ContentsClick String
   -- === Card Creation  ===
   | AddCard String
   | LinkClicked String
-  -- === Card Visibility  ===
-  | OpenCard String
-  | CloseCard String
   -- === Card Editing  ===
+  | SaveCard
   | EditCard String
-  | UpdateCard String
   | DeleteCard String
   | UpdateFieldTitle String
   | UpdateFieldBody String
+  -- === Card Visibility  ===
+  | OpenCard String
+  | CloseCard String
   -- === Ports ===
   | HandleKey String
 
@@ -93,54 +95,44 @@ update msg model =
     NoOp ->
       model ! []
 
-    ContentsClick title ->
-      let
-        cardVisible_ =
-          ListExtra.find (\c -> c.title == title) model.story
-      in
-      case cardVisible_ of
-        Just cardVisible ->
-          model ! []
-
-        Nothing ->
-          update (OpenCard title) model
-
-    AddCard title ->
+    SaveCard ->
       case model.editing of
         Nothing ->
-          { model
-            | story = Card title "" :: model.story
-            , fieldTitle = title
-            , fieldBody = ""
-            , editing = Just title
-          }
-            ! [ dirty True
-              , focus ("card-title-edit-" ++ title)
-              , execCommand "selectAll"
-              ]
-        Just _ ->
           model ! []
 
-    LinkClicked title ->
+        Just {title, isNew, fieldTitle, fieldBody} ->
+          if isNew then
+            { model
+              | data = Card fieldTitle fieldBody :: model.data
+              , editing = Nothing
+            }
+              ! []
+          else
+            { model
+              | data = model.data
+                  |> List.map (\c -> if c.title == title then Card fieldTitle fieldBody else c)
+              , visible = model.visible
+                  |> List.map (\v -> if v == title then fieldTitle else title)
+              , editing = Nothing
+            }
+              ! []
+
+    EditCard title ->
       let
         card_ =
           ListExtra.find (\c -> c.title == title) model.data
-
-        cardVisible_ =
-          ListExtra.find (\c -> c.title == title) model.story
       in
-      case (card_, cardVisible_) of
-        (Nothing, _) ->
-          update (AddCard title) model
-
+      case (card_, model.editing) of
         (Just card, Nothing) ->
           { model
-            | story = card :: model.story
+            | editing = Just (EditState title False card.title card.body)
           }
             ! []
 
         _ ->
           model ! []
+
+
 
     OpenCard title ->
       let
@@ -148,132 +140,46 @@ update msg model =
           ListExtra.find (\c -> c.title == title) model.data
 
         cardVisible_ =
-          ListExtra.find (\c -> c.title == title) model.story
+          ListExtra.find (\v -> v == title) model.visible
       in
       case (card_, cardVisible_) of
-        (Just card, Just cardVisible) ->
-          model ! [] -- activate
-
         (Just card, Nothing) ->
           { model
-            | story = card :: model.story
+            | visible = card.title :: model.visible
           }
-            ! [ dirty True ]
+            ! []
 
-        (Nothing, Just cardVisible) ->
-          model ! [] -- focus/edit
-
-        (Nothing, Nothing) ->
+        _ ->
           model ! []
 
-    CloseCard title ->
-      let
-        card_ =
-          ListExtra.find (\c -> c.title == title) model.data
-
-        cardVisible_ =
-          ListExtra.find (\c -> c.title == title) model.story
-      in
-      case (card_, cardVisible_) of
-        (Just card, Just cardVisible) ->
-          { model
-            | story = List.filter (\c -> c.title /= title) model.story
-          } 
-            ! [ dirty True ]
-
-        (Just card, Nothing) ->
-          model ! []
-
-        (Nothing, Just cardVisible) ->
-          model ! []
-
-        (Nothing, Nothing) ->
-          model ! []
-
-
-    EditCard title ->
-      let
-        card_ =
-          ListExtra.find (\c -> c.title == title) model.data
-      in
-      case card_ of
+    UpdateFieldTitle fieldTitleNew ->
+      case model.editing of
         Nothing ->
           model ! []
 
-        Just card ->
+        Just editState ->
           { model
-            | fieldBody = card.body
-            , fieldTitle = title
-            , editing = Just title
+            | editing = Just {editState | fieldTitle = fieldTitleNew}
           }
-            ! [ dirty True 
-              , focus ("card-body-edit-" ++ title)
-              ]
+            ! []
 
-    UpdateCard title ->
-      let
-        card_ =
-          ListExtra.find (\c -> c.title == title) model.data
-
-        updateCard c =
-          if c.title == title then
-            { c 
-              | title = model.fieldTitle
-              , body = model.fieldBody 
-            }
-          else
-            c
-      in
-      case card_ of
+    UpdateFieldBody fieldBodyNew ->
+      case model.editing of
         Nothing ->
-          { model 
-            | data = Card model.fieldTitle model.fieldBody :: model.data
-            , story = List.map updateCard model.story
-            , fieldTitle = ""
-            , fieldBody = ""
-            , editing = Nothing
-          }
-            ! [ dirty True ]
+          model ! []
 
-        Just card ->
+        Just editState ->
           { model
-            | data = List.map updateCard model.data
-            , story = List.map updateCard model.story
-            , fieldTitle = ""
-            , fieldBody = ""
-            , editing = Nothing
+            | editing = Just {editState | fieldBody = fieldBodyNew}
           }
-            ! [ dirty True ]
-
-    DeleteCard title ->
-      let
-        filterFn c =
-          c.title /= title
-      in
-      { model
-        | data = List.filter filterFn model.data
-        , story = List.filter filterFn model.story
-      } 
-        ! [ dirty True ]
-
-    UpdateFieldTitle title ->
-      { model
-        | fieldTitle = title
-      }
-        ! []
-
-    UpdateFieldBody body ->
-      { model
-        | fieldBody = body
-      }
-        ! []
+            ! []
 
     HandleKey str ->
       case str of
         "mod+enter" ->
           case model.editing of
-            Just title ->
-              update (UpdateCard title) model
+            Just editState ->
+              update SaveCard model
 
             Nothing ->
               model ! []
@@ -281,8 +187,14 @@ update msg model =
         "mod+option+n" ->
           normalMode (AddCard "New Card") model
 
+        "mod+x" ->
+          (Debug.log "model" model) ! []
+
         _ ->
           model ! []
+
+    _ ->
+      model ! []
 
 
 
@@ -314,7 +226,7 @@ view model =
     [ div
        [ id "app"]
        [ viewContents model.data
-       , viewStory model.editing model.story
+       , viewStory model.editing (getStory model.data model.visible)
        ]
     , viewModel model
     ]
@@ -322,11 +234,18 @@ view model =
 
 -- View: Story (visible cards)
 
-viewStory : Maybe String -> List Card -> Html Msg
-viewStory editingId_ visibleCards =
+viewStory : Maybe EditState -> List Card -> Html Msg
+viewStory editState_ visibleCards =
   let
+    isEditing c =
+      case editState_ of
+        Just {title, isNew, fieldTitle, fieldBody} ->
+          title == c.title
+        Nothing ->
+          False
+
     viewFn c =
-      viewCard (editingId_ == Just c.title) c
+      viewCard (isEditing c) c
   in
   div
     [ id "story"
@@ -364,7 +283,7 @@ viewCard isEditing card =
             ]
             []
         , button
-            [ onClick (UpdateCard card.title) ]
+            [ onClick SaveCard ]
             [ text "save"]
         ]
 
@@ -424,7 +343,7 @@ viewCardItem card =
     [ id ("card-item-" ++ card.title)
     , classList [ ("card-item", True)
                 ]
-    , onClick (ContentsClick card.title)
+    , onClick (OpenCard card.title)
     ] 
     [ text card.title ]
 
@@ -438,12 +357,6 @@ viewModel model =
     ]
     [ div [ id "model-data" ] 
         (viewListCardData model.data)
-    , div [ id "model-story" ] 
-        (viewListCardData model.story)
-    , div [ id "model-fieldTitle" ] 
-        [pre [][text model.fieldTitle]]
-    , div [ id "model-fieldBody" ] 
-        [pre [][text model.fieldBody]]
     ]
 
 
@@ -461,6 +374,21 @@ viewListCardData cards =
 
 
 -- HELPERS
+
+getStory : List Card -> List String -> List Card
+getStory cards visible =
+  let
+    mapFn v =
+      if v == "" then
+        Just (Card "" "")
+      else
+        ListExtra.find (\c -> c.title == v) cards
+  in
+
+
+  visible
+    |> List.filterMap mapFn
+
 
 relativeGetCard : Int -> List Card -> String -> Maybe String
 relativeGetCard delta cards title =

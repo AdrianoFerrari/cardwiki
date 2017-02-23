@@ -15,28 +15,20 @@ var domToModel = function() {
   var data = 
     domToListCard(document.getElementById('model-data'));
 
-  var story = 
-    domToListCard(document.getElementById('model-story'));
+  var visibile = 
+    domToListCard(document.getElementById('model-visible'));
 
   if(data.length == 0) {
     var model =
       { "data": []
-      , "story": [card("New Card","")]
-      , "fieldTitle": "New Card" 
-      , "fieldBody": "" 
-      , "editing": "New Card"
-      , "activeId": "New Card"
-      , "activeStory": true
+      , "visible": [""]
+      , "editing": {title: "", isNew: true, fieldTitle: "New Card", fieldBody: ""}
       }
   } else {
     var model =
       { "data": data
-      , "story": story
-      , "fieldTitle": "" 
-      , "fieldBody": "" 
+      , "visible": visible
       , "editing": null
-      , "activeId": null
-      , "activeStory": false
       }
   }
 
@@ -134,6 +126,7 @@ var shortcuts =
   , 'enter'
   , 'mod+enter'
   , 'mod+option+n'
+  , 'mod+x'
   ]
 
 var needOverride =
