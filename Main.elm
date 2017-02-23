@@ -33,8 +33,6 @@ type alias Model =
   , fieldTitle : String
   , fieldBody : String
   , editing : Maybe String
-  , activeId : Maybe String
-  , activeStory : Bool
   }
 
 
@@ -56,8 +54,6 @@ init savedState =
         , fieldTitle = ""
         , fieldBody = ""
         , editing = Nothing
-        , activeId = Nothing
-        , activeStory = False
         }
       , Cmd.none
       )
@@ -70,12 +66,6 @@ init savedState =
 
 type Msg
   = NoOp
-  -- === Card Activation ===
-  | Activate Bool String
-  | GoUp
-  | GoDown
-  | GoRight
-  | GoLeft
   -- === Contents ===
   | ContentsClick String
   -- === Card Creation  ===
@@ -100,83 +90,17 @@ update msg model =
     NoOp ->
       model ! []
 
-    Activate isStory title ->
-      { model
-        | activeId = Just title
-        , activeStory = isStory
-      }
-        ! []
-
-    GoUp ->
-      case model.activeId of
-        Just title ->
-          let
-            prevStory_ =
-              getPrev model.story title
-
-            prevContents_ =
-              getPrev model.data title
-          in
-          case (model.activeStory, prevStory_, prevContents_) of
-            (True, Just prevStory, _) ->
-              update (Activate True prevStory) model
-
-            (False, _, Just prevContents) ->
-              update (Activate False prevContents) model
-
-            (_, _, _) ->
-              model ! []
-
-        Nothing ->
-          model ! []
-
-    GoDown ->
-      case model.activeId of
-        Just title ->
-          let
-            nextStory_ =
-              getNext model.story title
-
-            nextContents_ =
-              getNext model.data title
-          in
-          case (model.activeStory, nextStory_, nextContents_) of
-            (True, Just nextStory, _) ->
-              update (Activate True nextStory) model
-
-            (False, _, Just nextContents) ->
-              update (Activate False nextContents) model
-
-            (_, _, _) ->
-              model ! []
-
-        Nothing ->
-          model ! []
-
-    GoRight ->
-      case model.activeStory of
-        False ->
-          { model
-            | activeStory = True
-          } 
-            ! []
-
-        True ->
-          model ! []
-
-    GoLeft ->
-      case model.activeStory of
-        True ->
-          { model
-            | activeStory = False
-          } 
-            ! []
-
-        False ->
-          model ! []
-
     ContentsClick title ->
-      update (Activate False title) model
+      let
+        cardVisible_ =
+          ListExtra.find (\c -> c.title == title) model.story
+      in
+      case cardVisible_ of
+        Just cardVisible ->
+          model ! []
+
+        Nothing ->
+          update (OpenCard title) model
 
     AddCard title ->
       { model
@@ -334,29 +258,6 @@ update msg model =
 
     HandleKey str ->
       case str of
-        "j" ->
-          normalMode GoDown model
-
-        "k" ->
-          normalMode GoUp model
-
-        "l" ->
-          normalMode GoRight model
-
-        "h" ->
-          normalMode GoLeft model
-
-        "enter" ->
-          case (model.activeStory, model.editing, model.activeId) of
-            (True, Nothing, Just title) ->
-              update (EditCard title) model
-
-            (False, Nothing, Just title) ->
-              update (OpenCard title) model
-
-            _ ->
-              model ! []
-
         "mod+enter" ->
           case model.editing of
             Just title ->
@@ -400,13 +301,8 @@ view model =
     [ id "main" ]
     [ div
        [ id "app"]
-       [ viewContents 
-           (if not model.activeStory then model.activeId else Nothing)
-           model.data
-       , viewStory 
-           (if model.activeStory then model.activeId else Nothing)
-           model.editing 
-           model.story
+       [ viewContents model.data
+       , viewStory model.editing model.story
        ]
     , viewModel model
     ]
@@ -414,11 +310,11 @@ view model =
 
 -- View: Story (visible cards)
 
-viewStory : Maybe String -> Maybe String -> List Card -> Html Msg
-viewStory activeId_ editingId_ visibleCards =
+viewStory : Maybe String -> List Card -> Html Msg
+viewStory editingId_ visibleCards =
   let
     viewFn c =
-      viewCard (activeId_ == Just c.title) (editingId_ == Just c.title) c
+      viewCard (editingId_ == Just c.title) c
   in
   div
     [ id "story"
@@ -427,15 +323,14 @@ viewStory activeId_ editingId_ visibleCards =
 
 
 
-viewCard : Bool -> Bool -> Card -> Html Msg
-viewCard isActive isEditing card =
+viewCard : Bool -> Card -> Html Msg
+viewCard isEditing card =
   case isEditing of
     True ->
       div 
         [ id ("card-" ++ card.title)
         , classList
             [ ("card", True)
-            , ("active", isActive)
             , ("editing", isEditing)
             ]
         ] 
@@ -466,18 +361,17 @@ viewCard isActive isEditing card =
         [ id ("card-" ++ card.title)
         , classList
             [ ("card", True)
-            , ("active", isActive)
             , ("editing", isEditing)
             ]
-        , onClick (Activate True card.title)
         , onDoubleClick (EditCard card.title)
         ] 
         [ text card.title
         , br [][]
         , viewBody card.body 
         , br [][]
-        , button [onClick (CloseCard card.title)][text "X"]
-        , button [onClick (DeleteCard card.title)][text "Delete"]
+        , button [onClick (CloseCard card.title)][text "close"]
+        , button [onClick (EditCard card.title)][text "edit"]
+        , button [onClick (DeleteCard card.title)][text "delete"]
         ]
 
 
@@ -501,23 +395,22 @@ viewBody str =
 
 -- View: Contents List
 
-viewContents : Maybe String -> List Card -> Html Msg
-viewContents activeId_ cards =
+viewContents : List Card -> Html Msg
+viewContents cards =
   div
     [ id "content" ]
     [ button [onClick (AddCard "New Card")] [text "+"]
     , ul
         [ ]
-        ( List.map (viewCardItem activeId_) cards )
+        ( List.map viewCardItem cards )
     ]
 
 
-viewCardItem : Maybe String -> Card -> Html Msg
-viewCardItem activeId_ card =
+viewCardItem : Card -> Html Msg
+viewCardItem card =
   li 
     [ id ("card-item-" ++ card.title)
     , classList [ ("card-item", True)
-                , ("active", activeId_ == Just card.title)
                 ]
     , onClick (ContentsClick card.title)
     ] 
