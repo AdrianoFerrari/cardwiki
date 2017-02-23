@@ -106,16 +106,20 @@ update msg model =
           update (OpenCard title) model
 
     AddCard title ->
-      { model
-        | story = Card title "" :: model.story
-        , fieldTitle = title
-        , fieldBody = ""
-        , editing = Just title
-      }
-        ! [ dirty True
-          , focus ("card-title-edit-" ++ title)
-          , execCommand "selectAll"
-          ]
+      case model.editing of
+        Nothing ->
+          { model
+            | story = Card title "" :: model.story
+            , fieldTitle = title
+            , fieldBody = ""
+            , editing = Just title
+          }
+            ! [ dirty True
+              , focus ("card-title-edit-" ++ title)
+              , execCommand "selectAll"
+              ]
+        Just _ ->
+          model ! []
 
     LinkClicked title ->
       let
