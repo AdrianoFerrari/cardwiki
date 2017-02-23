@@ -23,6 +23,7 @@ main =
 
 
 port dirty : Bool -> Cmd msg
+port execCommand : String -> Cmd msg
 
 
 
@@ -111,7 +112,10 @@ update msg model =
         , fieldBody = ""
         , editing = Just title
       }
-        ! [ dirty True ]
+        ! [ dirty True
+          , focus ("card-title-edit-" ++ title)
+          , execCommand "selectAll"
+          ]
 
     LinkClicked title ->
       let

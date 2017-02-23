@@ -90,6 +90,12 @@ var initialize = function() {
   cardwiki.ports.dirty.subscribe(function(bool) {
     dirty = bool;
   });
+
+  cardwiki.ports.execCommand.subscribe(function(cmd) {
+    setTimeout(function(){
+      document.execCommand(cmd, false);
+    }, 10);
+  });
 }
 
 
