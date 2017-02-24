@@ -146,18 +146,21 @@ update msg model =
 
         Just {title, fieldTitle, fieldBody} ->
           case (title, fieldTitle) of
+            -- empty titles not allowed
             ( _,  "" ) ->
               model ! []
 
+            -- new card saved from draft
             ( "", _ ) ->
               { model
-                | data = Card fieldTitle fieldBody :: model.data
+                | data = Card (fieldTitle |> String.trim) fieldBody :: model.data
                 , visible = model.visible
                     |> List.map (\v -> if v == title then fieldTitle else v)
                 , editing = Nothing
               }
                 ! [ dirty True ]
 
+            -- existing card modified
             ( _, _ ) ->
               { model
                 | data = model.data
@@ -377,7 +380,7 @@ viewBody : String -> Html Msg
 viewBody str =
   let
     matchToLink {match} =
-      let m = match |> String.dropLeft 2 |> String.dropRight 2 in
+      let m = match |> String.dropLeft 2 |> String.dropRight 2 |> String.trim in
       String.join "" 
         [ "<a href=\"javascript:linkClicked('" , m , "')\">", m, "</a>" ]
 
