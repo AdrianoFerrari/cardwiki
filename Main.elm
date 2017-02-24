@@ -75,6 +75,7 @@ type Msg
   -- === Card Creation  ===
   | NewCard
   | AddCard String
+  | LinkClicked String
   -- === Card Editing  ===
   | SaveCard
   | EditCard String
@@ -86,7 +87,6 @@ type Msg
   -- === Ports ===
   | HandleKey String
   -- === Later? ===
-  | LinkClicked String
   | DeleteCard String
 
 
@@ -100,16 +100,23 @@ update msg model =
       update (AddCard "") model
 
     AddCard title ->
-      case model.editing of
-        Just _ ->
-          model ! []
-
-        Nothing ->
+      let
+        card_ =
+          ListExtra.find (\c -> c.title == title) model.data
+      in
+      case (card_, model.editing) of
+        (Nothing, Nothing) ->
           { model
             | visible = "" :: model.visible
-            , editing = Just (EditState "" "" "")
+            , editing = Just (EditState "" title "")
           }
             ! []
+
+        _ ->
+          model ! []
+
+    LinkClicked title ->
+      update (AddCard title) model
 
     SaveCard ->
       case model.editing of
@@ -275,40 +282,47 @@ view model =
 
 viewStory : Maybe EditState -> List Card -> Html Msg
 viewStory editState_ visibleCards =
-  let
-    isEditing c =
-      case editState_ of
-        Just {title, fieldTitle, fieldBody} ->
-          title == c.title
-        Nothing ->
-          False
-
-    viewFn c =
-      viewCard (isEditing c) c
-  in
   div
     [ id "story"
     ]
-    ( List.map viewFn visibleCards )
+    ( List.map (viewCard editState_) visibleCards )
 
 
 
-viewCard : Bool -> Card -> Html Msg
-viewCard isEditing card =
-  case isEditing of
-    True ->
+viewCard : Maybe EditState -> Card -> Html Msg
+viewCard editState_ card =
+  let
+    viewTemplate =
       div 
         [ id ("card-" ++ card.title)
         , classList
             [ ("card", True)
-            , ("editing", isEditing)
+            , ("editing", False)
+            ]
+        , onDoubleClick (EditCard card.title)
+        ] 
+        [ text card.title
+        , br [][]
+        , viewBody card.body 
+        , br [][]
+        , button [onClick (CloseCard card.title)][text "close"]
+        , button [onClick (EditCard card.title)][text "edit"]
+        , button [onClick (DeleteCard card.title)][text "delete"]
+        ]
+
+    editTemplate fieldTitle =
+      div 
+        [ id ("card-" ++ card.title)
+        , classList
+            [ ("card", True)
+            , ("editing", True)
             ]
         ] 
         [ input 
             [ id ("card-title-edit-" ++ card.title)
             , classList [ ("mousetrap", True) 
                         ]
-            , defaultValue card.title
+            , defaultValue fieldTitle
             , onInput UpdateFieldTitle
             ]
             []
@@ -325,24 +339,16 @@ viewCard isEditing card =
             [ onClick SaveCard ]
             [ text "save"]
         ]
+  in
+  case editState_ of
+    Just {title, fieldTitle, fieldBody} ->
+      if card.title == title then
+        editTemplate fieldTitle
+      else
+        viewTemplate
 
-    False ->
-      div 
-        [ id ("card-" ++ card.title)
-        , classList
-            [ ("card", True)
-            , ("editing", isEditing)
-            ]
-        , onDoubleClick (EditCard card.title)
-        ] 
-        [ text card.title
-        , br [][]
-        , viewBody card.body 
-        , br [][]
-        , button [onClick (CloseCard card.title)][text "close"]
-        , button [onClick (EditCard card.title)][text "edit"]
-        , button [onClick (DeleteCard card.title)][text "delete"]
-        ]
+    Nothing ->
+      viewTemplate
 
 
 viewBody : String -> Html Msg
