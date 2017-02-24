@@ -116,7 +116,22 @@ update msg model =
           model ! []
 
     LinkClicked title ->
-      update (AddCard title) model
+      let
+        card_ =
+          ListExtra.find (\c -> c.title == title) model.data
+
+        cardVisible_ =
+          ListExtra.find (\v -> v == title) model.visible
+      in
+      case (card_, cardVisible_) of
+        ( Just card, Nothing ) ->
+          update (OpenCard title) model
+
+        ( Nothing, _ ) ->
+          update (AddCard title) model
+
+        _ ->
+          model ! []
 
     SaveCard ->
       case model.editing of
