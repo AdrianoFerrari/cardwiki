@@ -73,6 +73,7 @@ init savedState =
 type Msg
   = NoOp
   -- === Card Creation  ===
+  | NewCard
   | AddCard String
   -- === Card Editing  ===
   | SaveCard
@@ -81,12 +82,12 @@ type Msg
   | UpdateFieldBody String
   -- === Card Visibility  ===
   | OpenCard String
+  | CloseCard String
   -- === Ports ===
   | HandleKey String
   -- === Later? ===
   | LinkClicked String
   | DeleteCard String
-  | CloseCard String
 
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -94,6 +95,21 @@ update msg model =
   case msg of
     NoOp ->
       model ! []
+    
+    NewCard ->
+      update (AddCard "") model
+
+    AddCard title ->
+      case model.editing of
+        Just _ ->
+          model ! []
+
+        Nothing ->
+          { model
+            | visible = "" :: model.visible
+            , editing = Just (EditState "" "" "")
+          }
+            ! []
 
     SaveCard ->
       case model.editing of
@@ -139,26 +155,6 @@ update msg model =
         _ ->
           model ! []
 
-
-
-    OpenCard title ->
-      let
-        card_ =
-          ListExtra.find (\c -> c.title == title) model.data
-
-        cardVisible_ =
-          ListExtra.find (\v -> v == title) model.visible
-      in
-      case (card_, cardVisible_) of
-        (Just card, Nothing) ->
-          { model
-            | visible = card.title :: model.visible
-          }
-            ! []
-
-        _ ->
-          model ! []
-
     UpdateFieldTitle fieldTitleNew ->
       case model.editing of
         Nothing ->
@@ -181,6 +177,42 @@ update msg model =
           }
             ! []
 
+    OpenCard title ->
+      let
+        card_ =
+          ListExtra.find (\c -> c.title == title) model.data
+
+        cardVisible_ =
+          ListExtra.find (\v -> v == title) model.visible
+      in
+      case (card_, cardVisible_) of
+        (Just card, Nothing) ->
+          { model
+            | visible = card.title :: model.visible
+          }
+            ! []
+
+        _ ->
+          model ! []
+
+    CloseCard title ->
+      let
+        card_ =
+          ListExtra.find (\c -> c.title == title) model.data
+
+        cardVisible_ =
+          ListExtra.find (\v -> v == title) model.visible
+      in
+      case (card_, cardVisible_) of
+        (Just card, Just cardVisible) ->
+          { model
+            | visible = List.filter (\v -> v /= title) model.visible
+          }
+            ! []
+
+        _ ->
+          model ! []
+
     HandleKey str ->
       case str of
         "mod+enter" ->
@@ -192,7 +224,7 @@ update msg model =
               model ! []
 
         "mod+option+n" ->
-          normalMode (AddCard "New Card") model
+          normalMode NewCard model
 
         "mod+x" ->
           (Debug.log "model" model) ! []
@@ -337,7 +369,7 @@ viewContents : List Card -> Html Msg
 viewContents cards =
   div
     [ id "content" ]
-    [ button [onClick (AddCard "New Card")] [text "+"]
+    [ button [onClick NewCard] [text "+"]
     , ul
         [ ]
         ( List.map viewCardItem cards )
