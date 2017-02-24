@@ -110,7 +110,13 @@ update msg model =
             | visible = "" :: model.visible
             , editing = Just (EditState "" title "")
           }
-            ! []
+            ! [ dirty True
+              , focus 
+                ( if title == "" then "card-title-edit-"
+                  else "card-body-edit-"
+                )
+              , execCommand "selectAll"
+              ]
 
         _ ->
           model ! []
@@ -150,7 +156,7 @@ update msg model =
                     |> List.map (\v -> if v == title then fieldTitle else v)
                 , editing = Nothing
               }
-                ! []
+                ! [ dirty True ]
 
             ( _, _ ) ->
               { model
@@ -160,7 +166,7 @@ update msg model =
                     |> List.map (\v -> if v == title then fieldTitle else v)
                 , editing = Nothing
               }
-                ! []
+                ! [ dirty True ]
 
     EditCard title ->
       let
@@ -172,7 +178,8 @@ update msg model =
           { model
             | editing = Just (EditState title card.title card.body)
           }
-            ! []
+            ! [ focus ("card-body-edit-" ++ title)
+              ]
 
         _ ->
           model ! []
