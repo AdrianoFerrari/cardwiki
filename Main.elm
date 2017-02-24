@@ -39,7 +39,6 @@ type alias Model =
 
 type alias EditState =
   { title : String
-  , isNew : Bool
   , fieldTitle : String
   , fieldBody : String
   }
@@ -75,18 +74,19 @@ type Msg
   = NoOp
   -- === Card Creation  ===
   | AddCard String
-  | LinkClicked String
   -- === Card Editing  ===
   | SaveCard
   | EditCard String
-  | DeleteCard String
   | UpdateFieldTitle String
   | UpdateFieldBody String
   -- === Card Visibility  ===
   | OpenCard String
-  | CloseCard String
   -- === Ports ===
   | HandleKey String
+  -- === Later? ===
+  | LinkClicked String
+  | DeleteCard String
+  | CloseCard String
 
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -100,22 +100,29 @@ update msg model =
         Nothing ->
           model ! []
 
-        Just {title, isNew, fieldTitle, fieldBody} ->
-          if isNew then
-            { model
-              | data = Card fieldTitle fieldBody :: model.data
-              , editing = Nothing
-            }
-              ! []
-          else
-            { model
-              | data = model.data
-                  |> List.map (\c -> if c.title == title then Card fieldTitle fieldBody else c)
-              , visible = model.visible
-                  |> List.map (\v -> if v == title then fieldTitle else title)
-              , editing = Nothing
-            }
-              ! []
+        Just {title, fieldTitle, fieldBody} ->
+          case (title, fieldTitle) of
+            ( _,  "" ) ->
+              model ! []
+
+            ( "", _ ) ->
+              { model
+                | data = Card fieldTitle fieldBody :: model.data
+                , visible = model.visible
+                    |> List.map (\v -> if v == title then fieldTitle else v)
+                , editing = Nothing
+              }
+                ! []
+
+            ( _, _ ) ->
+              { model
+                | data = model.data
+                    |> List.map (\c -> if c.title == title then Card fieldTitle fieldBody else c)
+                , visible = model.visible
+                    |> List.map (\v -> if v == title then fieldTitle else v)
+                , editing = Nothing
+              }
+                ! []
 
     EditCard title ->
       let
@@ -125,7 +132,7 @@ update msg model =
       case (card_, model.editing) of
         (Just card, Nothing) ->
           { model
-            | editing = Just (EditState title False card.title card.body)
+            | editing = Just (EditState title card.title card.body)
           }
             ! []
 
@@ -239,7 +246,7 @@ viewStory editState_ visibleCards =
   let
     isEditing c =
       case editState_ of
-        Just {title, isNew, fieldTitle, fieldBody} ->
+        Just {title, fieldTitle, fieldBody} ->
           title == c.title
         Nothing ->
           False
