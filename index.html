@@ -2,9 +2,11 @@
   <head>
     <script src="mousetrap.js"></script>
     <script type="text/javascript" src="elm.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/js-sha1/0.4.1/sha1.js"></script>
     <link rel="stylesheet" href="style.css"/>
   </head>
   <body>
+    <input type="file" id="file"/>
 <script type="text/javascript">
 
 
@@ -15,8 +17,8 @@ var domToModel = function() {
   var data = 
     domToListCard(document.getElementById('model-data'));
 
-  var visibile = 
-    domToListCard(document.getElementById('model-visible'));
+  var visible = 
+    domToListString(document.getElementById('model-visible'));
 
   if(data.length == 0) {
     var model =
@@ -35,6 +37,15 @@ var domToModel = function() {
   return model;
 }
 
+
+// domToListCard : Element -> List Card
+var domToListString = function(el) {
+  if (el && el.children) {
+    return [].slice.call(el.children).map(e => e.title)
+  } else {
+    return [];
+  }
+}
 
 // domToListCard : Element -> List Card
 var domToListCard = function(el) {

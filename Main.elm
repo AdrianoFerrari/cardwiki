@@ -427,6 +427,8 @@ viewModel model =
     ]
     [ div [ id "model-data" ] 
         (viewListCardData model.data)
+    , div [ id "model-visible" ]
+        (List.map (\v -> div [ attribute "title" v ][]) model.visible)
     ]
 
 
