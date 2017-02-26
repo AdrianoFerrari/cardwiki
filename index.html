@@ -2,7 +2,6 @@
   <head>
     <script src="mousetrap.js"></script>
     <script type="text/javascript" src="elm.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/js-sha1/0.4.1/sha1.js"></script>
     <link rel="stylesheet" href="style.css"/>
   </head>
   <body>
@@ -159,8 +158,8 @@ Mousetrap.bind(shortcuts, function(e, s) {
 
 var savedFile;
 var savedFileString;
-var shaCurrent;
-var shaSaved;
+var domModelCurrent;
+var domModelSaved;
 
 var reader = new FileReader();
 var parser = new DOMParser();
@@ -188,11 +187,11 @@ reader.onload = function(e) {
 var updateSha = function(){
   if(savedFileString !== undefined){
     doc = parser.parseFromString(savedFileString, "text/html");
-    shaSaved = doc.getElementById('model').innerHTML;
+    domModelSaved = doc.getElementById('model').innerHTML;
   }
-  shaCurrent = document.getElementById('model').innerHTML;
-  if(shaSaved !== undefined && shaCurrent !== undefined) {
-    setDirty(shaCurrent !== shaSaved);
+  domModelCurrent = document.getElementById('model').innerHTML;
+  if(domModelSaved !== undefined && domModelCurrent !== undefined) {
+    setDirty(domModelCurrent !== domModelSaved);
   }
 }
 
