@@ -153,6 +153,40 @@ Mousetrap.bind(shortcuts, function(e, s) {
 });
 
 
+/*======= File Save State ======= */
+
+var savedFile;
+var savedFileString;
+var shaCurrent;
+var shaSaved;
+
+var reader = new FileReader();
+var parser = new DOMParser();
+
+oFile = document.getElementById('file');
+
+oFile.onchange = function(e) {
+  savedFile = e.target.files[0];
+  reader.readAsText(savedFile)
+};
+
+reader.onload = function(e) {
+  savedFileString = e.target.result;
+  doc = parser.parseFromString(savedFileString, "text/html");
+  shaSaved = sha1(doc.getElementById('model').innerHTML);
+};
+
+window.onfocus = function(e) {
+  shaCurrent = sha1(document.getElementById('model').innerHTML);
+  console.log(shaCurrent);
+  console.log(shaSaved);
+  if(shaSaved !== undefined && shaCurrent !== undefined) {
+    dirty = (shaCurrent !== shaSaved);
+  }
+  console.log(dirty);
+}
+
+
 
 </script>
   </body>
