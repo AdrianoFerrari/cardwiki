@@ -178,12 +178,9 @@ reader.onload = function(e) {
 
 window.onfocus = function(e) {
   shaCurrent = sha1(document.getElementById('model').innerHTML);
-  console.log(shaCurrent);
-  console.log(shaSaved);
   if(shaSaved !== undefined && shaCurrent !== undefined) {
     dirty = (shaCurrent !== shaSaved);
   }
-  console.log(dirty);
 }
 
 

@@ -76,18 +76,17 @@ type Msg
   | NewCard
   | AddCard String
   | LinkClicked String
-  -- === Card Editing  ===
+  -- === Card Edit/Delete  ===
   | SaveCard
   | EditCard String
   | UpdateFieldTitle String
   | UpdateFieldBody String
+  | DeleteCard String
   -- === Card Visibility  ===
   | OpenCard String
   | CloseCard String
   -- === Ports ===
   | HandleKey String
-  -- === Later? ===
-  | DeleteCard String
 
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -209,6 +208,25 @@ update msg model =
           }
             ! []
 
+    DeleteCard title ->
+      let
+        newEditState =
+          case model.editing of
+            Just editState ->
+              if editState.title == title then 
+                Nothing 
+              else 
+                Just editState
+
+            Nothing -> Nothing
+      in
+      { model
+        | data = List.filter (\c -> c.title /= title) model.data
+        , visible = List.filter (\v -> v /= title) model.visible
+        , editing = newEditState
+      }
+        ! []
+
     OpenCard title ->
       let
         card_ =
@@ -263,9 +281,6 @@ update msg model =
 
         _ ->
           model ! []
-
-    _ ->
-      model ! []
 
 
 
