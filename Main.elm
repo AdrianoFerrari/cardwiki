@@ -22,7 +22,7 @@ main =
     }
 
 
-port dirty : Bool -> Cmd msg
+port dirtyToJS : Bool -> Cmd msg
 port execCommand : String -> Cmd msg
 
 
@@ -34,6 +34,7 @@ type alias Model =
   { data : List Card
   , visible : List String
   , editing : Maybe EditState
+  , dirty : Bool
   }
 
 
@@ -60,6 +61,7 @@ init savedState =
       ( { data = [Card "test1" "test content", Card "test2" "test content 2"]
         , visible = ["test1", "test2"]
         , editing = Nothing
+        , dirty = False
         }
       , Cmd.none
       )
@@ -87,6 +89,7 @@ type Msg
   | CloseCard String
   -- === Ports ===
   | HandleKey String
+  | Dirty Bool
 
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -109,7 +112,7 @@ update msg model =
             | visible = "" :: model.visible
             , editing = Just (EditState "" title "")
           }
-            ! [ dirty True
+            ! [ dirtyToJS True
               , focus 
                 ( if title == "" then "card-title-edit-"
                   else "card-body-edit-"
@@ -157,7 +160,7 @@ update msg model =
                     |> List.map (\v -> if v == title then fieldTitle else v)
                 , editing = Nothing
               }
-                ! [ dirty True ]
+                ! [ dirtyToJS True ]
 
             -- existing card modified
             ( _, _ ) ->
@@ -168,7 +171,7 @@ update msg model =
                     |> List.map (\v -> if v == title then fieldTitle else v)
                 , editing = Nothing
               }
-                ! [ dirty True ]
+                ! [ dirtyToJS True ]
 
     EditCard title ->
       let
@@ -282,6 +285,11 @@ update msg model =
         _ ->
           model ! []
 
+    Dirty bool ->
+      { model
+        | dirty = bool
+      }
+        ! []
 
 
 
@@ -290,6 +298,7 @@ update msg model =
 
 port linkClicked : (String -> msg) -> Sub msg
 port shortcut : (String -> msg) -> Sub msg
+port dirty : (Bool -> msg) -> Sub msg
 
 
 subscriptions : Model -> Sub Msg
@@ -297,6 +306,7 @@ subscriptions model =
   Sub.batch
     [ linkClicked LinkClicked
     , shortcut HandleKey
+    , dirty Dirty
     ]
 
 
@@ -314,6 +324,7 @@ view model =
        [ viewContents model.data
        , viewStory model.editing (getStory model.data model.visible)
        ]
+    , div [][text (if model.dirty then "dirty!" else "")]
     , viewModel model
     ]
 
@@ -341,8 +352,7 @@ viewCard editState_ card =
             ]
         , onDoubleClick (EditCard card.title)
         ] 
-        [ text card.title
-        , br [][]
+        [ h2 [][ text card.title ]
         , viewBody card.body 
         , br [][]
         , button [onClick (CloseCard card.title)][text "close"]
