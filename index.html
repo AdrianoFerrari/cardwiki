@@ -25,12 +25,14 @@ var domToModel = function() {
       { "data": []
       , "visible": [""]
       , "editing": {title: "", fieldTitle: "New Card", fieldBody: ""}
+      , "dirty": false
       }
   } else {
     var model =
       { "data": data
       , "visible": visible
       , "editing": null
+      , "dirty": false
       }
   }
 
@@ -90,8 +92,8 @@ var initialize = function() {
     cardwiki = Elm.Main.fullscreen(data);
   }
 
-  cardwiki.ports.dirty.subscribe(function(bool) {
-    dirty = bool;
+  cardwiki.ports.dirtyToJS.subscribe(function(bool) {
+    updateFile(savedFile);
   });
 
   cardwiki.ports.execCommand.subscribe(function(cmd) {
@@ -166,23 +168,38 @@ var parser = new DOMParser();
 oFile = document.getElementById('file');
 
 oFile.onchange = function(e) {
-  savedFile = e.target.files[0];
-  reader.readAsText(savedFile)
-};
-
-reader.onload = function(e) {
-  savedFileString = e.target.result;
-  doc = parser.parseFromString(savedFileString, "text/html");
-  shaSaved = sha1(doc.getElementById('model').innerHTML);
+  updateFile(e.target.files[0]);
 };
 
 window.onfocus = function(e) {
-  shaCurrent = sha1(document.getElementById('model').innerHTML);
+  updateFile(savedFile);
+}
+
+var updateFile = function(file) {
+  savedFile = file;
+  reader.readAsText(file);
+}
+
+reader.onload = function(e) {
+  savedFileString = e.target.result;
+  updateSha();
+};
+
+var updateSha = function(){
+  if(savedFileString !== undefined){
+    doc = parser.parseFromString(savedFileString, "text/html");
+    shaSaved = doc.getElementById('model').innerHTML;
+  }
+  shaCurrent = document.getElementById('model').innerHTML;
   if(shaSaved !== undefined && shaCurrent !== undefined) {
-    dirty = (shaCurrent !== shaSaved);
+    setDirty(shaCurrent !== shaSaved);
   }
 }
 
+var setDirty = function(bool){
+  dirty = bool;
+  cardwiki.ports.dirty.send(bool);
+}
 
 
 </script>
