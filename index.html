@@ -92,6 +92,7 @@ var initialize = function() {
   }
 
   cardwiki.ports.dirtyToJS.subscribe(function(bool) {
+    dirty = true;
     updateFile(savedFile);
   });
 
@@ -176,7 +177,9 @@ window.onfocus = function(e) {
 
 var updateFile = function(file) {
   savedFile = file;
-  reader.readAsText(file);
+  if(file) {
+    reader.readAsText(file);
+  }
 }
 
 reader.onload = function(e) {
