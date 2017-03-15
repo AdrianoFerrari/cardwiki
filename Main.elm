@@ -83,6 +83,7 @@ type Msg
   | EditCard String
   | UpdateFieldTitle String
   | UpdateFieldBody String
+  | CancelCard
   | DeleteCard String
   -- === Card Visibility  ===
   | OpenCard String
@@ -211,6 +212,17 @@ update msg model =
           }
             ! []
 
+    CancelCard ->
+      case model.editing of
+        Nothing ->
+          model ! []
+
+        Just editState ->
+          { model
+            | editing = Nothing
+          }
+            ! []
+
     DeleteCard title ->
       let
         newEditState =
@@ -275,6 +287,9 @@ update msg model =
 
             Nothing ->
               model ! []
+
+        "esc" ->
+          update CancelCard model
 
         "mod+option+n" ->
           normalMode NewCard model
