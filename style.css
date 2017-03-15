@@ -37,3 +37,8 @@ body {
 .card.active, .card-item.active {
   background-color: white;
 }
+
+.card.editing textarea {
+  width: 100%;
+  min-height: 100px;
+}
